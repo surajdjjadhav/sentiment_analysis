@@ -171,5 +171,7 @@ cython_debug/
 .ruff_cache/
 
 # PyPI configuration file
-.pypirc
+.pypirc/
 cred.txt
+local_s3/
+model/
