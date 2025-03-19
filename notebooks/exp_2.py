@@ -1,161 +1,189 @@
-from src.constens import CONFIG , VECTORIZER , ALGORITHUMS
+from src.constants import CONFIG
 import os
-import pandas as pd 
+import pandas as pd
 import numpy as np
-import dagshub 
-import mlflow 
+import dagshub
+import mlflow
 import mlflow.sklearn
 import re
 import string
-import time 
-pd.set_option("future.no_scilent_downcasting" , True)
-
-import warnings
-
-from sklearn.feature_extraction.text import CountVectorizer , TfidfVectorizer
+from src.logger import logging
+from src.Exception import MyException
+import time
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression 
-from sklearn.naive_bayes import MultinomialNB 
-from sklearn.ensemble import RandomForestClassifier , GradientBoostingClassifier 
-from sklearn.metrics import f1_score , accuracy_score, recall_score  , precision_score 
-from xgboost import XGBClassifier 
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.metrics import f1_score, accuracy_score, recall_score, precision_score
+from xgboost import XGBClassifier
 import nltk
-from nltk.corpus import stopwords 
-from nltk.stem import WordNetLemmatizer 
-import scipy.sparse 
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+import scipy.sparse
+import warnings
+import sys
 
 warnings.filterwarnings("ignore")
+nltk.download('stopwords')
+nltk.download('wordnet')
+logging.info("nltk libraries downloading done")
 
+try:
+    mlflow.set_tracking_uri(CONFIG["mlflow_tracking_uri"])
+    dagshub.init(repo_owner=CONFIG["dagshub_repo_owner"], repo_name=CONFIG["dagshub_repo_name"], mlflow=True)
 
-mlflow.set_tracking_uri(CONFIG["mlflow_tracking_uri"])
-dagshub.init(repo_owner = CONFIG[ "dagshub_repo_owner"]  , repo_name = CONFIG["dagshub_repo_name"]  , mlflow = True)
-mlflow.set_experiment(CONFIG["expriment_name"])
-
+    mlflow.set_experiment(CONFIG["experiment_name"])
+    logging.info("MLflow and Dagshub initialized successfully.")
+except Exception as e:
+    logging.error(f"Error initializing MLflow and Dagshub: {e}")
+    raise MyException(f"Initialization error: {e}")
 
 def remove_stop_words(text):
-    stopwords = set(stopwords.words("english"))
-    return " ".join([word for word in text.split() if word not in stopwords])
+    try:
+        stop_words = set(stopwords.words("english"))
+        return " ".join([word for word in text.split() if word not in stop_words])
+    except Exception as e:
+        raise MyException(e, sys)
 
 def remove_number(text):
-    return " ".join(char for char in text if not char.isdigit())
-
+    try:
+        return re.sub(r'\d+', '', text)
+    except Exception as e:
+        raise MyException(e, sys)
 
 def lower(text):
-    return text.lower()
-
+    try:
+        return text.lower()
+    except Exception as e:
+        raise MyException(e, sys)
+    
 def lemmatization(text):
-    lemmatizer = WordNetLemmatizer()
-    return " ".join(lemmatizer.lemmatize(word) for word in text.split())
-
-
-def remove_puctuation(text):
-    return re.sub(f"[{(re.escape(string.punctuation))}]" , " " , text)
-
+    try:
+        lemmatizer = WordNetLemmatizer()
+        return " ".join(lemmatizer.lemmatize(word) for word in text.split())
+    except Exception as e:
+        raise MyException(e, sys)
+    
+def remove_punctuation(text):
+    try:
+        return re.sub(f"[{re.escape(string.punctuation)}]", " ", text)
+    except Exception as e:
+        raise MyException(e, sys)
 
 def remove_url(text):
-    return re.sub(r'https?://\s+|www\.\s+','',text)
-
-
-
+    try:
+        return re.sub(r'https?://\S+|www\.\S+', '', text)
+    except Exception as e:
+        raise MyException(e, sys)
 
 def normalize_text(df):
     try:
-        df["reviews"].apply(remove_stop_words)\
-                     .apply(remove_number)\
-                    .apply(lower)\
-                    .apply(lemmatization)\
-                    .apply(remove_puctuation)\
-                    .apply(remove_url)\
-                    .apply(normalize_text)
+        logging.info("Text normalization initialized")
+        df["reviews"] = df["reviews"].apply(lambda x: lower(x))\
+                                    .apply(lambda x: remove_punctuation(x))\
+                                    .apply(lambda x: remove_stop_words(x))\
+                                    .apply(lambda x: remove_number(x))\
+                                    .apply(lambda x: lemmatization(x))\
+                                    .apply(lambda x: remove_url(x))
+        logging.info("Text normalization completed")
         return df
     except Exception as e:
-        print(f" error occur at normalization{e}")
-
-
+        raise MyException(e, sys)
 
 
 def load_data(file_path):
-    df = pd.read_csv(file_path)
-    df = normalize_text(df)
-    df = df[df["sentiment"].isin(["positive" , "negative"])]
-    df['sentiment'] =   df["sentiment"].map({"positive":1 , "negative":0 })
-    return df
+    try:
+        df = pd.read_csv(file_path)
+        logging.info("Data loading completed")
 
+        df = normalize_text(df)
 
+        df = df[df["sentiment"].isin(["positive", "negative"])]
+        df['sentiment'] = df["sentiment"].map({"positive": 1, "negative": 0})
+        logging.info("Target column encoding completed")
+        return df
+    except Exception as e:
+        raise MyException(e, sys)
+VECTORIZER = {
+    "Bow": CountVectorizer(),
+    "TFIDF": TfidfVectorizer()
+}
+
+ALGORITHMS = {
+    "LogisticRegression": LogisticRegression(),
+    "XGBoost": XGBClassifier(),
+    "RandomForest": RandomForestClassifier(),
+    "GradientBoosting": GradientBoostingClassifier(),
+    "MultinomialNB": MultinomialNB()
+}
 
 def train_evaluate(df):
+    try:
+        with mlflow.start_run(run_name="all_experiment") as parent_run:
+            for algo_name, algo in ALGORITHMS.items():
+                for vec_name, vec in VECTORIZER.items():
+                    with mlflow.start_run(run_name=f"{algo_name} with {vec_name}", nested=True) as child_run:
+                        try:
+                            logging.info(f"Training {algo_name} with {vec_name}")
+                            x = vec.fit_transform(df["reviews"])
+                            y = df["sentiment"]
+                            x_train, x_test, y_train, y_test = train_test_split(
+                                x, y, random_state=42, test_size=CONFIG["test_size"])
+                            
+                            mlflow.log_params({
+                                "vectorizer": vec_name,
+                                "algorithm": algo_name,
+                                "test_size": CONFIG["test_size"]
+                            })
+                            
+                            model = algo
+                            model.fit(x_train, y_train)
+                            log_model_params(algo_name, model)
+                            
+                            y_pred = model.predict(x_test)
+                            metrics = {
+                                "accuracy": accuracy_score(y_test, y_pred),
+                                "precision": precision_score(y_test, y_pred),
+                                "f1_score": f1_score(y_test, y_pred),
+                                "recall": recall_score(y_test, y_pred)
+                            }
+                            mlflow.log_metrics(metrics)
+                            input_example = x_test[:5] if not scipy.sparse.issparse(x_test) else x_test[:5].toarray()
+                            mlflow.sklearn.log_model(model, "model", input_example=input_example)
+                            
+                            logging.info(f"Model trained: {algo_name} with {vec_name} | Metrics: {metrics}")
+                        except Exception as e:
+                            logging.error(f"Error in training {algo_name} with {vec_name}: {e}")
+                            mlflow.log_param("error", str(e))
+                            raise MyException(e, sys)
+    except Exception as e:
+        logging.error(f"Error in train_evaluate function: {e}")
+        raise MyException(e, sys)
 
-    with mlflow.start_run(run_name = "all experiment") as parent_run :
-        for algo_name , algo in ALGORITHUMS.items():
-            for vec_name  , vec in VECTORIZER.items():
-                with mlflow.start_run(run_name=f"{algo_name} with {vec_name}" , nested = True) as child_run:
-                    try:
-                        x= vec.fit_transform(df["reviews"])
-                        y = df["sentiment"]
-
-
-                        x_train , x_test , y_train , y_test = train_test_split(x , y, randomstate = 42 , test_size = CONFIG["test_size"])
-
-
-                        mlflow.log_params({
-                            "vectorizer":vec ,
-                            "Algorithum":algo,
-                            "test_size": CONFIG["test_size"]
-                        })
-
-                        model = algo
-                        model.fit(x_train , y_train)
-
-                        log_model_params(algo_name , model)
-
-
-                        y_pred = model.predict(x_test)
-
-                        metrics = {
-                            "accuracy": accuracy_score(y_train , y_pred),
-                            "precision": precision_score(y_train , y_test),
-                            "f1_score" : f1_score(y_train , y_pred),
-                            "recall": recall_score(y_train , y_test)
-                        }
-
-                        mlflow.log_metrics(metrics)
-                        input_example = x_test[:5] if not scipy.sparse.issparse(x_test) else x_test[:5].toarray()
-
-                        mlflow.sklearn.log_model(model ,"model" , input_example = input_example)
-
-
-                        print(f" algorithum {algo_name} vectorizer_name {vec_name}")
-                        print(f"metrics {metrics}")
-                    except Exception as e:
-                        print(f" error in  training {algo_name} vectorizer{vec_name}  : {e}")
-                        mlflow.log_params("error", str(e))
-
-
-def log_model_params(algo_name , model):
-
-    
-    params_to_log = {}
-
-    if algo_name == "LogisticRegression":
-        params_to_log[["C"]] = model.C
-    elif algo_name == "MultinomialNB":
-        params_to_log["alpha"]= model.alpha
-    elif algo_name == 'RandomForestClassifier':
-        params_to_log["n_estimator"] = model.n_estimator
-        params_to_log["max_depth"] = model.max_depth
-    elif algo_name == "XGBoost":
-        params_to_log["n_estimator"] = model.n_estimator
-        params_to_log["learning_rate"] = model.learning_rate
-    elif algo_name== "GradinetBoosting":
-        params_to_log["n_estimator"] = model.n_estimator
-        params_to_log["learning_rate"]= model.learning_rate
-        params_to_log["max_depth"] = model.max_depth
-
-    mlflow.log_params(params_to_log)
-
-
+def log_model_params(algo_name, model):
+    try:
+        params_to_log = {}
+        if algo_name == "LogisticRegression":
+            params_to_log["C"] = model.C
+        elif algo_name == "MultinomialNB":
+            params_to_log["alpha"] = model.alpha
+        elif algo_name in ["RandomForest", "GradientBoosting", "XGBoost"]:
+            params_to_log.update({
+                "n_estimators": model.n_estimators,
+                "learning_rate": getattr(model, "learning_rate", None),
+                "max_depth": getattr(model, "max_depth", None)
+            })
+        mlflow.log_params(params_to_log)
+    except Exception as e:
+        logging.error(f"Error in logging model parameters: {e}")
+        raise MyException(e, sys)
 
 if __name__ == "__main__":
-
-    df = load_data(CONFIG["data_path"])
-    train_evaluate(df)
+    try:
+        df = load_data(CONFIG["data_path"])
+        print(df.head())
+        train_evaluate(df)
+    except Exception as e:
+        logging.error(f"Error in main execution: {e}")
+        raise MyException(e, sys)
