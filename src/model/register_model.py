@@ -9,10 +9,10 @@ import os
 
 warnings.filterwarnings("ignore")
 
-dagshub_token = os.getenv("capstone_test")
+dagshub_token = os.getenv("CAPSTONE_TEST")
 
 if not dagshub_token:
-    raise EnvironmentError("capstone_test environment variable not set")
+    raise EnvironmentError("CAPSTONE_TEST environment variable not set")
 
 os.environ["mlflow_tracking_username"] = dagshub_token
 os.environ["mlflow_tracking_password"] = dagshub_token
