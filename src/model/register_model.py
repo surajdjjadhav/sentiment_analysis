@@ -14,7 +14,7 @@ dagshub_token = os.getenv("CAPSTONE_TEST")
 if not dagshub_token:
     raise EnvironmentError("CAPSTONE_TEST environment variable not set")
 
-os.environ["mlflow_tracking_username"] = dagshub_token
+os.environ["mlflow_tracking_username"] = "surajdjjadhav"
 os.environ["mlflow_tracking_password"] = dagshub_token
 
 dagshub_uri = "https://dagshub.com"
