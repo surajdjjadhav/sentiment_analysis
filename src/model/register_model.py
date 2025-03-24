@@ -9,21 +9,23 @@ import os
 
 warnings.filterwarnings("ignore")
 
-# dagshub_token = os.getenv("capstone_test")
+dagshub_token = os.getenv("capstone_test")
 
-# if not dagshub_token:
-#     raise EnvironmentError("capstone_test environment variable not set")
+if not dagshub_token:
+    raise EnvironmentError("capstone_test environment variable not set")
 
-# os.environ["mlflow_tracking_username"] = dagshub_token
-# os.environ["mlflow_tracking_password"] = dagshub_token
+os.environ["mlflow_tracking_username"] = dagshub_token
+os.environ["mlflow_tracking_password"] = dagshub_token
 
+dagshub_uri = "https://dagshub.com"
 repo_owner = "surajdjjadhav"
 repo_name = "sentiment_analysis"
 
+mlflow.set_tracking_uri(f"{dagshub_uri}/{repo_owner}/{repo_name}.mlflow")
 """this is for local use"""
-mlflow.set_tracking_uri("https://dagshub.com/surajdjjadhav/sentiment_analysis.mlflow")
+# mlflow.set_tracking_uri("https://dagshub.com/surajdjjadhav/sentiment_analysis.mlflow")
 
-dagshub.init(repo_name=repo_name, repo_owner=repo_owner, mlflow=True)
+# dagshub.init(repo_name=repo_name, repo_owner=repo_owner, mlflow=True)
 
 
 def load_model_info(file_path: str) -> dict:

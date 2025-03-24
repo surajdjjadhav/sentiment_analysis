@@ -12,13 +12,13 @@ from src.Exception import MyException
 import sys
 
 
-# Set Dagshub credentials
-# dagshub_token = os.getenv("Capstone_test")
-# if not dagshub_token:
-#     raise EnvironmentError("Capstone_test environment variable not set")
 
-# os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
-# os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
+dagshub_token = os.getenv("CAPSTONE_TEST")
+if not dagshub_token:
+    raise EnvironmentError("CAPSTONE_TEST environment variable not set")
+
+os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
+os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
 
 # Define Dagshub repository details
 dagshub_uri = "https://dagshub.com"
@@ -26,7 +26,7 @@ repo_owner = "surajdjjadhav"
 repo_name = "sentiment_analysis"
 
 mlflow.set_tracking_uri(f"{dagshub_uri}/{repo_owner}/{repo_name}.mlflow")
-dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
+# dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
 
 # Function to load the trained model
 def load_model(file_path: str):

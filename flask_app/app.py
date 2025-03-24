@@ -11,13 +11,25 @@ from src.data.data_preprocessing import normalize_text
 from src.Exception import MyException  
 import sys
 
-# DagsHub & MLflow settings
-repo_owner = "surajdjjadhav"
-repo_name = "sentiment_analysis"
+
 
 try:
-    mlflow.set_tracking_uri(f"https://dagshub.com/{repo_owner}/{repo_name}.mlflow")
-    dagshub.init(repo_name=repo_name, repo_owner=repo_owner, mlflow=True)
+    dagshub_token = os.getenv("CAPSTONE_TEST")
+    if not dagshub_token:
+            raise EnvironmentError("CAPSTONE_TEST environment variable not set")
+
+    os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
+    os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
+
+# Define Dagshub repository details
+    dagshub_uri = "https://dagshub.com"
+    repo_owner = "surajdjjadhav"
+    repo_name = "sentiment_analysis"
+
+    mlflow.set_tracking_uri(f"{dagshub_uri}/{repo_owner}/{repo_name}.mlflow")
+    # mlflow.set_tracking_uri(f"https://dagshub.com/{repo_owner}/{repo_name}.mlflow")
+    # dagshub.init(repo_name=repo_name, repo_owner=repo_owner, mlflow=True)
+    
     logging.info("MLflow tracking URI set successfully.")
 except Exception as e:
     logging.error(f"Failed to set MLflow tracking URI: {e}")
