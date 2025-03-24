@@ -27,7 +27,7 @@ jobs:
         run: pip list | grep from-root
 
       - name: Run Pipeline
-        # env:
-        #   CAPSTONE_TEST: ${{ secrets.CAPSTONE_TEST }}
+        env:
+          CAPSTONE_TEST: ${{ secrets.CAPSTONE_TEST }}
         run: |
           dvc repro
