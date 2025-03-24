@@ -177,4 +177,4 @@ local_s3/
 model/
 !src/model/
 !src/model/**
-/data
+data/
