@@ -14,6 +14,13 @@ def load_data(file_path):
     try:
         df = pd.read_csv(file_path)
         df.fillna(" ", inplace=True)
+        
+        # Validate required columns
+        required_columns = {"review", "sentiment"}
+        missing_columns = required_columns - set(df.columns)
+        if missing_columns:
+            raise MyException(f"Missing required columns in {file_path}: {missing_columns}", sys)
+
         logging.info(f"Data loaded and null values filled from {file_path}")
         return df
     except Exception as e:
@@ -70,7 +77,9 @@ def apply_BOW(train_data: pd.DataFrame, test_data: pd.DataFrame, max_features: i
 def save_data(df: pd.DataFrame, file_path: str) -> None:
     """Save DataFrame to CSV file."""
     try:
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        dir_name = os.path.dirname(file_path) or "."
+        os.makedirs(dir_name, exist_ok=True)
+
         df.to_csv(file_path, index=False)
         logging.info(f"Data saved to: {file_path}")
     except Exception as e:
@@ -80,10 +89,9 @@ def save_data(df: pd.DataFrame, file_path: str) -> None:
 
 def main():
     try:
-        # params = load_params("params.yml")
-        # max_features = params["feature_engg"]["max_features"]  # Fix: correct key name
+        params = load_params("params.yaml")
+        max_features = params.get("feature_engineering", {}).get("max_features", 1000)  # Fix: safer key access
 
-        max_features = 20
         train_data = load_data("./data/interim/train_process_data.csv")
         test_data = load_data("./data/interim/test_processed_data.csv")
 

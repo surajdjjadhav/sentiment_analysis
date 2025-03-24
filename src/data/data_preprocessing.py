@@ -14,15 +14,12 @@ from src.Exception import MyException
 nltk.download("wordnet")
 nltk.download("stopwords")
 
-def normalize_text(df: pd.DataFrame, col="text") -> pd.DataFrame:
+
+
+def normalize_text(input_data, col="text"):
     try:
         logging.info("Text normalization initialized")
-
-        # Handling missing values
-        if df[col].isnull().sum() > 0:
-            logging.warning(f"Missing values found in {col}, dropping them.")
-            df = df.dropna(subset=[col])
-
+        
         stop_words = set(stopwords.words("english"))
         lemmatizer = WordNetLemmatizer()
 
@@ -38,16 +35,23 @@ def normalize_text(df: pd.DataFrame, col="text") -> pd.DataFrame:
                 return text
             except Exception as e:
                 raise MyException(e, sys)
+        
+        # If input is a DataFrame, apply preprocessing to the specified column
+        if isinstance(input_data, pd.DataFrame):
+            if col not in input_data.columns:
+                raise ValueError(f"Column '{col}' not found in DataFrame")
+            return input_data[col].apply(preprocess_text)
 
-        # Apply text preprocessing
-        df[col] = df[col].apply(preprocess_text)
+        # If input is a string, process it directly
+        elif isinstance(input_data, str):
+            return preprocess_text(input_data)
 
-        logging.info("Text normalization completed successfully")
-        return df
+        else:
+            raise TypeError("Input must be either a string or a DataFrame with a text column")
 
     except Exception as e:
+        logging.error(f"Error in text normalization: {e}")
         raise MyException(e, sys)
-
 
 def main():
     try:
