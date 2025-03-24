@@ -10,13 +10,13 @@ import os
 warnings.filterwarnings("ignore")
 
 dagshub_token = os.getenv("CAPSTONE_TEST")
-
 if not dagshub_token:
     raise EnvironmentError("CAPSTONE_TEST environment variable not set")
 
-os.environ["mlflow_tracking_username"] = "surajdjjadhav"
-os.environ["mlflow_tracking_password"] = dagshub_token
+os.environ["MLFLOW_TRACKING_USERNAME"] = "surajdjjadhav"
+os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
 
+# Define Dagshub repository details
 dagshub_uri = "https://dagshub.com"
 repo_owner = "surajdjjadhav"
 repo_name = "sentiment_analysis"
