@@ -18,7 +18,7 @@ try:
     if not dagshub_token:
             raise EnvironmentError("CAPSTONE_TEST environment variable not set")
 
-    os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
+    os.environ["MLFLOW_TRACKING_USERNAME"] =  "surajdjjadhav"
     os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
 
 # Define Dagshub repository details
