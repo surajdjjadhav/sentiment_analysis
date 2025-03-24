@@ -27,6 +27,7 @@ class TestModelLoading(unittest.TestCase):
         mlflow.set_tracking_uri(f"{dagshub_uri}/{repo_owner}/{repo_name}.mlflow")
 
 
+
         # Load the new model from MLflow model registry
         cls.new_model_name = "my_model"
         cls.new_model_version = cls.get_latest_model_version(cls.new_model_name)
@@ -34,7 +35,7 @@ class TestModelLoading(unittest.TestCase):
         cls.new_model = mlflow.pyfunc.load_model(cls.new_model_uri)
 
         # Load the vectorizer
-        cls.vectorizer = pickle.load(open('models/vectorizer.pkl', 'rb'))
+        cls.vectorizer = pickle.load(open('model/vectorizer.pkl', 'rb'))
 
         # Load holdout test data
         cls.holdout_data = pd.read_csv('data/processed/test_bow.csv')
