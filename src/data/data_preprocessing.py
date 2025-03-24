@@ -58,8 +58,8 @@ def main():
         train_df = pd.read_csv("./data/raw/train.csv")
         test_df = pd.read_csv("./data/raw/test.csv")
 
-        train_processed_data = normalize_text(train_df , "review")
-        test_processed_data = normalize_text(test_df , "review")
+        train_df["review"] = normalize_text(train_df , "review")
+        test_df["review"] = normalize_text(test_df , "review")
 
 
         data_path = os.path.join("./data" , "interim")
@@ -67,8 +67,8 @@ def main():
         logging.info(f"directory created sucessfuly for saving preprocessed data")
 
 
-        train_processed_data.to_csv(os.path.join(data_path , "train_process_data.csv"), index = False)
-        test_processed_data.to_csv(os.path.join(data_path , "test_processed_data.csv") , index = False) 
+        train_df.to_csv(os.path.join(data_path , "train_process_data.csv"), index = False)
+        test_df.to_csv(os.path.join(data_path , "test_processed_data.csv") , index = False) 
         logging.info(f"processed data saved to : {data_path}")  
     except Exception as e:
         raise MyException(e , sys)
