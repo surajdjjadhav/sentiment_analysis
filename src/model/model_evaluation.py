@@ -11,8 +11,10 @@ from src.logger import logging
 from src.Exception import MyException
 import sys
 
+# Ensure "reports" directory exists
+os.makedirs("reports", exist_ok=True)
 
-
+# Get DagsHub token from environment variables
 dagshub_token = os.getenv("CAPSTONE_TEST")
 if not dagshub_token:
     raise EnvironmentError("CAPSTONE_TEST environment variable not set")
@@ -26,7 +28,6 @@ repo_owner = "surajdjjadhav"
 repo_name = "sentiment_analysis"
 
 mlflow.set_tracking_uri(f"{dagshub_uri}/{repo_owner}/{repo_name}.mlflow")
-# dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
 
 # Function to load the trained model
 def load_model(file_path: str):
@@ -59,9 +60,9 @@ def model_evaluation(clf, x_test: np.array, y_test: np.array) -> dict:
         y_pred = clf.predict(x_test)
         metrics_dict = {
             "accuracy_score": accuracy_score(y_test, y_pred),
-            "precision_score": precision_score(y_test, y_pred, average="binary"),  # Fix
-            "recall_score": recall_score(y_test, y_pred, average="binary"),  # Fix
-            "f1_score": f1_score(y_test, y_pred, average="binary"),  # Fix
+            "precision_score": precision_score(y_test, y_pred, average="macro"),  # Multi-class fix
+            "recall_score": recall_score(y_test, y_pred, average="macro"),  # Multi-class fix
+            "f1_score": f1_score(y_test, y_pred, average="macro"),  # Multi-class fix
         }
         logging.info(f"Model evaluation metrics: {metrics_dict}")
         return metrics_dict
@@ -90,7 +91,7 @@ def save_model_info(run_id: str, model_path: str, file_path: str) -> None:
 # Main function
 def main():
     try:
-        mlflow.set_experiment("my-dvc-pipeline")
+        mlflow.set_experiment("my-dvc-pipeline")  # Ensure experiment exists
 
         with mlflow.start_run() as run:
             clf = load_model("./models/model.pkl")
@@ -120,7 +121,8 @@ def main():
             mlflow.log_artifact("reports/metrics.json")
     
     except Exception as e:
-        raise MyException(e, sys)  # Fix: Catch errors from main()
+        logging.error(f"Error in main(): {e}")  # Add logging before raising
+        raise MyException(e, sys)
 
 if __name__ == "__main__":
     main()
