@@ -1,6 +1,6 @@
 import os
 import time
-from src.logger import logging
+from flask_app.logger import logging
 from flask import Flask, request, render_template
 import pandas as pd
 import pickle
@@ -8,7 +8,7 @@ import mlflow
 import dagshub
 from prometheus_client import Counter, Histogram, generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST
 from src.data.data_preprocessing import normalize_text
-from src.Exception import MyException  
+from flask_app.Exception import MyException  
 import sys
 
 
